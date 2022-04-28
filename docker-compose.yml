@@ -1,0 +1,206 @@
+version: '3.9'
+
+services:
+  # Zookeeper nodes
+  # ============================================================================
+  zk-1:
+    image: 'confluentinc/cp-zookeeper:${CONFLUENT_VERSION}'
+    hostname: zk-1
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 13181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: 'zk-1:13888:14888;zk-2:23888:24888;zk-3:33888:34888'
+    ports:
+      - '13181:13181'
+    networks:
+      - sandbox
+      - observabilitysandbox
+
+  zk-2:
+    image: confluentinc/cp-zookeeper:${CONFLUENT_VERSION}
+    hostname: zk-2
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 23181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zk-1:13888:14888;zk-2:23888:24888;zk-3:33888:34888
+    ports:
+      - 23181:23181
+    networks:
+      - sandbox
+      - observabilitysandbox
+
+  zk-3:
+    image: confluentinc/cp-zookeeper:${CONFLUENT_VERSION}
+    hostname: zk-3
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_CLIENT_PORT: 33181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zk-1:13888:14888;zk-2:23888:24888;zk-3:33888:34888
+    ports:
+      - 33181:33181
+    networks:
+      - sandbox
+      - observabilitysandbox
+
+  # Kafka nodes
+  # ============================================================================
+  kfk-1:
+    image: confluentinc/cp-kafka:${CONFLUENT_VERSION}
+    hostname: kfk-1
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_JMX_PORT: 9991
+      KAFKA_ZOOKEEPER_CONNECT: zk-1:13181,zk-2:13181,zk-3:13181
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kfk-1:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+      CONFLUENT_METRICS_ENABLE: 'false'
+    ports:
+      - 9092:9092
+      - 9991:9991
+    depends_on:
+      - zk-1
+      - zk-2
+      - zk-3
+    networks:
+      - sandbox
+      - observabilitysandbox
+
+  kfk-2:
+    image: confluentinc/cp-kafka:${CONFLUENT_VERSION}
+    hostname: kfk-2
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_JMX_PORT: 9992
+      KAFKA_ZOOKEEPER_CONNECT: zk-1:13181,zk-2:13181,zk-3:13181
+      KAFKA_LISTENERS: INTERNAL://:30092,EXTERNAL://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kfk-2:30092,EXTERNAL://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+      CONFLUENT_METRICS_ENABLE: 'false'
+    ports:
+      - 9093:9093
+      - 9992:9992
+    depends_on:
+      - zk-1
+      - zk-2
+      - zk-3
+    networks:
+      - sandbox
+      - observabilitysandbox
+
+  kfk-3:
+    image: confluentinc/cp-kafka:${CONFLUENT_VERSION}
+    hostname: kfk-3
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_JMX_PORT: 9993
+      KAFKA_ZOOKEEPER_CONNECT: zk-1:13181,zk-2:13181,zk-3:13181
+      KAFKA_LISTENERS: INTERNAL://:40092,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kfk-3:40092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+      CONFLUENT_METRICS_ENABLE: 'false'
+    ports:
+      - 9094:9094
+      - 9993:9993
+    depends_on:
+      - zk-1
+      - zk-2
+      - zk-3
+    networks:
+      - sandbox
+      - observabilitysandbox
+
+   # connect
+   # ===========================================================================
+
+   # Observability
+   # ===========================================================================
+  jmx-exporter-kfk-1:
+    image: "sscaling/jmx-prometheus-exporter"
+    environment:
+      CONFIG_YML : "/etc/jmx_exporter/config.yml"
+      JVM_OPTS: ${PROMETHEUS_JMX_AGENT_JVM_OPTS}
+    ports:
+      - 5556:5556
+    volumes:
+      - ./jmx_exporter/config_kafka101.yml:/etc/jmx_exporter/config.yml
+    depends_on:
+      - kfk-1
+    networks:
+      - sandbox
+      - observabilitysandbox
+
+   jmx-exporter-kfk-2:
+     image: "sscaling/jmx-prometheus-exporter"
+     environment:
+       CONFIG_YML : "/etc/jmx_exporter/config.yml"
+       JVM_OPTS: ${PROMETHEUS_JMX_AGENT_JVM_OPTS}
+     ports:
+       - 5557:5556
+     volumes:
+       - ./jmx_exporter/config_kafka102.yml:/etc/jmx_exporter/config.yml
+     depends_on:
+       - kfk-2
+     networks:
+       - sandbox
+       - observabilitysandbox
+
+    jmx-exporter-kfk-3:
+      image: "sscaling/jmx-prometheus-exporter"
+      environment:
+        CONFIG_YML : "/etc/jmx_exporter/config.yml"
+        JVM_OPTS: ${PROMETHEUS_JMX_AGENT_JVM_OPTS}
+      ports:
+        - 5558:5556
+      volumes:
+        - ./jmx_exporter/config_kafka103.yml:/etc/jmx_exporter/config.yml
+      depends_on:
+        - kfk-3
+      networks:
+        - sandbox
+        - observabilitysandbox
+
+   # UI
+   # ===========================================================================
+   kafka-kowl:
+     image: quay.io/cloudhut/kowl:master
+     environment:
+       KAFKA_BROKERS: kfk-1:20092,kfk-2:30092,kfk-3:40092
+     ports:
+       - 9088:8080
+     depends_on:
+       - kfk-1
+       - kfk-2
+       - kfk-3
+     networks:
+       - sandbox
+       - observabilitysandbox
+
+networks:
+  sandbox:
+    name: sandbox
+    external: true
+  observabilitysandbox:
+    name: observabilitysandbox
+    external: true
