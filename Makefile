@@ -26,7 +26,7 @@ HELP_FUN = \
 
 PROJECT_NAME=kafka-sandbox
 COMPOSE_COMMAND=docker-compose --project-name=$(PROJECT_NAME)
-SANDBOX_NETWORK=sandbox
+SANDBOX_NETWORK=devsandbox
 OBSERVABILITY_NETWORK=observabilitysandbox
 
 .DEFAULT_GOAL:=help
@@ -47,8 +47,7 @@ ifeq ($(shell docker network ls | grep ${OBSERVABILITY_NETWORK} | wc -l),0)
 	@docker network create ${OBSERVABILITY_NETWORK}
 endif
 
-.PHONY: help build up start stop restart logs status ps down clean
-
+.PHONY: build
 build: ## Build the Docker images
 	@$(COMPOSE_COMMAND) build
 

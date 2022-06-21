@@ -29,6 +29,12 @@ The following services will be started. Some of them are accessible via web:
 | `zk-2`              | [ZooKeeper node 2](https://zookeeper.apache.org/)        | [`23181`](http://localhost:23181/) |
 | `zk-3`              | [ZooKeeper node 3](https://zookeeper.apache.org/)        | [`33181`](http://localhost:33181/) |
 
+## References
+
+- https://github.com/gwagdalf/kafka-docker-study
+- https://github.com/jeremyverde/data_gen/tree/7d455afc6fa182281203aa009b63928ab2eea370
+- https://github.com/jmartinter/kafka-demo/tree/f33d023554c3fe944157a1812db6aa325e651b1a
+
 ## Contributing
 
 For a complete guide to contributing to the project, see the [Contribution Guide](CONTRIBUTING.md).
